@@ -28,10 +28,12 @@
     #include <cytypes.h>
     #include <ErrorCodes.h>
 
+    void I2C_CommunicationInit();
     void I2C_CommunicationStart();
     void I2C_CommunicationStop();
     ErrorCode I2C_CommunicationReadRegister(uint8_t device_address, 
                                             uint8_t register_address,
+                                            uint8_t register_count,
                                             uint8_t* data);
     ErrorCode I2C_CommunicationWriteRegister(uint8_t device_address,
                                              uint8_t register_address,
