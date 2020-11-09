@@ -44,22 +44,22 @@
     #define LIS3DH_STATUS_REG_ADDRESS 0x27
     
     // Definition of the bits that must be controlled in the status register
-    #define LIS3DH_STATUS_REG_AVAILABLEDATA 0x08
-    #define LIS3DH_STATUS_REG_AVAILABLEZ 0x04
-    #define LIS3DH_STATUS_REG_AVAILABLEY 0x02
-    #define LIS3DH_STATUS_REG_AVAILABLEX 0x01
+    #define LIS3DH_STATUS_REG_AVAILABLEDATA 0x08 // ZYXDA bit = 1
+    #define LIS3DH_STATUS_REG_AVAILABLEZ 0x04 // ZDA bit = 1
+    #define LIS3DH_STATUS_REG_AVAILABLEY 0x02 // YDA bit = 1
+    #define LIS3DH_STATUS_REG_AVAILABLEX 0x01 // XDA bit = 1
 
     // Definition of the address of the control register 1 of the device
     #define LIS3DH_CTRL_REG1_ADDRESS 0x20
 
     // Definition of the bits that must be set in the control register 1
-    #define LIS3DH_CTRL_REG1_SETTINGS 0x0F
+    #define LIS3DH_CTRL_REG1_SETTINGS 0x07 // LPen = 0, Zen = 1, Yen = 1 and Xen = 1 
 
     // Definition of the address of the control register 4 of the device
     #define LIS3DH_CTRL_REG4_ADDRESS 0x23
 
     // Definition of the bits that must be set in the control register 4
-    #define LIS3DH_CTRL_REG4_SETTINGS 0x88
+    #define LIS3DH_CTRL_REG4_SETTINGS 0x88 // BDU bit = 1 and HR bit = 1
     
     // Definitio of the address of the registers that contain the accelerometer outputs
     #define LIS3DH_OUT_X_L 0x28
@@ -68,7 +68,7 @@
     
     /* Definition of the coefficients for the conversion of the values sampled by the
     accelerometer is values that are expressed in [m/s^2] */
-    #define M_COEFFICIENT_DIGIT_TO_G (2^12 - 1)/(2 - (-2)) /* All the possible values obtained
+    #define M_COEFFICIENT_DIGIT_TO_G ((2^12) - 1)/(2 - (-2)) /* All the possible values obtained
     with 12 bits are remapped on the full scale (FS) range, that is set ranging from -2g to
     + 2g */
     #define Q_COEFFICIENT_DIGIT_TO_G -2 // Intercept with the vertical axis
@@ -104,27 +104,36 @@
     
     uint8_t Output_Array[BYTES_TO_SEND];
     
-    // Declaration of all the functions contained in the source file
+    /******  Declaration of all the functions contained in the source file  ******/
     void I2C_CommunicationStart(); // Function that starts the communication
+    
     void I2C_CommunicationStop(); // Function that stops the communication
+    
     ErrorCode I2C_CommunicationReadRegister(uint8_t device_address, 
                                             uint8_t register_address,
                                             uint8_t register_count,
                                             uint8_t* data);
     // Function that reads the values contained in the register 
+    
     ErrorCode I2C_CommunicationWriteRegister(uint8_t device_address,
                                              uint8_t register_address,
                                              uint8_t data);
     // Function that modifies the values contained in the register
+    
     uint8_t I2C_Communication_IsDeviceConnected(uint8_t device_address); /* Function that identifies
     if the device is still connected or not */
+    
     void I2C_CommunicationInitRegister(); /* Function that initialises the addresses of the 
     registers */
+    
     void I2C_CommunicationSetRegister(); // Function that sets the configurations of the registers
+    
     void I2C_CommunicationAvailableData(); /* Function that manages the presence of some new data
     available to be sent through the I2C communication protocol */
+    
     int16 I2C_CommunicationConversion(uint8_t *data);/* Function aimed in the conversion of the 
     sampled data in the correct measurement unit in order to plot them after the communication */
+    
     void I2C_CommunicationTransmission(); // Function aimed in the transmission of the data
     
 #endif

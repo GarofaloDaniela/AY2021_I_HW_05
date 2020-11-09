@@ -25,9 +25,11 @@
     
     #include <project.h> /* Library that contains all the functions related to the components
     added in the project, included the PushButton functions */
+    #include <I2C_Communication.h>
     
     uint8 read_ODR;
     
+    // Declaration of the function aimed to manage the pressing of the PushButton component
     void PushButton_IsPressed();
     
 #endif

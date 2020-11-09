@@ -74,8 +74,8 @@ ErrorCode I2C_CommunicationReadRegister(uint8_t device_address,
 }
 
 ErrorCode I2C_CommunicationWriteRegister(uint8_t device_address,
-                                             uint8_t register_address,
-                                             uint8_t data)
+                                         uint8_t register_address,
+                                         uint8_t data)
 {
     /* Send start condition: WRITE command in order to communicate the device and the
     register addresses to the slave peripheral */
@@ -188,7 +188,7 @@ void I2C_CommunicationSetRegister()
                                            ctrl_register_1);
     if (error == NO_ERROR)
     {
-        sprintf(message, "CONTROL REGISTER 1 is setted equal to: 0x%02X\r\n", ctrl_register_1);
+        sprintf(message, "CONTROL REGISTER 1 is set equal to: 0x%02X\r\n", ctrl_register_1);
         UART_Debug_PutString(message);
     }
     else
@@ -206,7 +206,7 @@ void I2C_CommunicationSetRegister()
                                            ctrl_register_4);
     if (error == NO_ERROR)
     {
-        sprintf(message, "CONTROL REGISTER 4 is setted equal to: 0x%02X\r\n", ctrl_register_4);
+        sprintf(message, "CONTROL REGISTER 4 is set equal to: 0x%02X\r\n", ctrl_register_4);
         UART_Debug_PutString(message);
     }
     else
@@ -215,17 +215,18 @@ void I2C_CommunicationSetRegister()
     }
 }
 
-void I2C_CommunicationAvaiableData()
+void I2C_CommunicationAvailableData()
 {
     if (status_register == LIS3DH_STATUS_REG_AVAILABLEDATA)
     {
+        ErrorCode error;
         switch (status_register << 5) /* Considering only the 3 least significat bits associated
         to the presence of available data for each signle channel of the accelerometer */
         {
             case LIS3DH_STATUS_REG_AVAILABLEX:
             {
                 // Read the data register in order to save the available data
-                ErrorCode error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
+                error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
                                                                 LIS3DH_OUT_X_L,
                                                                 2,
                                                                 X_data);
@@ -242,7 +243,7 @@ void I2C_CommunicationAvaiableData()
             case LIS3DH_STATUS_REG_AVAILABLEY:
             {
                 // Read the data register in order to save the available data
-                ErrorCode error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
+                error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
                                                                 LIS3DH_OUT_Y_L,
                                                                 2,
                                                                 Y_data);
@@ -259,7 +260,7 @@ void I2C_CommunicationAvaiableData()
             case LIS3DH_STATUS_REG_AVAILABLEZ:
             {
                 // Read the data register in order to save the available data
-                ErrorCode error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
+                error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
                                                                 LIS3DH_OUT_Z_L,
                                                                 2,
                                                                 Z_data);
@@ -274,6 +275,7 @@ void I2C_CommunicationAvaiableData()
                 }
             }
         }
+        
         // Transmission of the data through the I2C communication protocol
         I2C_CommunicationTransmission();
     }

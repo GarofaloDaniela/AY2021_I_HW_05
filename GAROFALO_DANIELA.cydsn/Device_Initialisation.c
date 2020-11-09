@@ -17,7 +17,6 @@
 */
     
 #include <Device_Initialisation.h>
-#include <I2C_Communication.h>
 
 void Device_Init()
 {
@@ -30,6 +29,7 @@ void Device_Init()
     // Initialisation of the EEPROM component
     EEPROM_Start();
     
+    // Initialisation of the ODR information in the control register 1
     read_ODR = EEPROM_ReadByte(EEPROM_ODR_ADRESS);
     if (read_ODR < 0x01 || read_ODR > 0x06) /* If the value saved in correspondence of the memory 
     address is not one of the allowable values for the ODR information, this value is set
@@ -37,6 +37,22 @@ void Device_Init()
     the read_ODR variable */
     {
         read_ODR = 0x01;
+    }
+    // Sending the information to the register in order to set the data rate of the device
+    ctrl_register_1 = (read_ODR << 5) + 0x07; /* Setting the first 3 bits of the register using
+    the ODR information and the remaining ones according to the requirements of the project
+    (LPen = 0, Zen = 1, Yen = 1 and Xen = 1) */
+    ErrorCode error = I2C_CommunicationWriteRegister(LIS3DH_DEVICE_ADDRESS,
+                                                     LIS3DH_CTRL_REG1_ADDRESS,
+                                                     ctrl_register_1);
+    if (error == NO_ERROR)
+    {
+        sprintf(message, "CONTROL REGISTER 1 is set equal to: 0x%02X\r\n", ctrl_register_1);
+        UART_Debug_PutString(message);
+    }
+    else
+    {
+        UART_Debug_PutString("Error occurred during I2C communication with CONTROL REGISTER 1");
     }
     
     /* Initialisation of the header and of the tail in the array to be send throught the I2C

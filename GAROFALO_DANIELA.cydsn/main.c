@@ -23,13 +23,6 @@
 #include <Device_Initialisation.h>
 #include <PushButton_Function.h>
 
-// Declaration of the variable in which is saved the ODR information from the EEPROm
-extern uint8 read_ODR;
-
-/* Declaration of the variables in which are saved the converted information coming from the
-accelerator that must be send throuhg the I2C communication protocol */
-extern uint8_t Output_Array[BYTES_TO_SEND];
-
 int main(void)
 {
     CyGlobalIntEnable; /* Enable global interrupts. */
@@ -52,7 +45,8 @@ int main(void)
         // Function that controls if the PushButton is pressed in order to update the ODR data
         PushButton_IsPressed();
         
-        
+        // Function that controls if there are some available data from the accelerometer
+        I2C_CommunicationAvailableData();
     }
 }
 
