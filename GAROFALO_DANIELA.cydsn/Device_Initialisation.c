@@ -39,9 +39,9 @@ void Device_Init()
         read_ODR = 0x01;
     }
     // Sending the information to the register in order to set the data rate of the device
-    ctrl_register_1 = (read_ODR << 5) + 0x07; /* Setting the first 3 bits of the register using
-    the ODR information and the remaining ones according to the requirements of the project
-    (LPen = 0, Zen = 1, Yen = 1 and Xen = 1) */
+    ctrl_register_1 = (read_ODR << 4) + 0x07; /* Setting the first 4 bits of the register using
+    the ODR information and the remaining ones are equal to set according to the requirements
+    of the project: LPen = 0, Xen = 1, Yen = 1 and Zen = 1 */
     ErrorCode error = I2C_CommunicationWriteRegister(LIS3DH_DEVICE_ADDRESS,
                                                      LIS3DH_CTRL_REG1_ADDRESS,
                                                      ctrl_register_1);

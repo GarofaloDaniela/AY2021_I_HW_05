@@ -23,6 +23,8 @@
 #include <Device_Initialisation.h>
 #include <PushButton_Function.h>
 
+char message[50] = {'\0'};
+
 int main(void)
 {
     CyGlobalIntEnable; /* Enable global interrupts. */
@@ -33,10 +35,7 @@ int main(void)
     Device_Init();
     
     // Initialisation of the registers needed in the I2C communication protocol
-    I2C_CommunicationInitRegister();
-    
-    // Setting the registers according to the requirements and the contraints of the project
-    I2C_CommunicationSetRegister();
+    I2C_CommunicationSetRegisters();
     
     for(;;)
     {

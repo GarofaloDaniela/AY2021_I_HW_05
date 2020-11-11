@@ -32,16 +32,14 @@ void I2C_CommunicationStop()
 
 ErrorCode I2C_CommunicationReadRegister(uint8_t device_address, 
                                         uint8_t register_address,
-                                        uint8_t register_count,
-                                        uint8_t* data)
+                                        uint8_t *data)
 {
     /* Send start condition: WRITE command in order to communicate the device and the
     register addresses to the slave peripheral */
     uint8_t error = I2C_MasterSendStart(device_address, I2C_WRITE_XFER_MODE);
     if (error == I2C_MSTR_NO_ERROR)
     {
-        // Write address of register to be read with the MSB equal to 1
-        register_address |= 0x80; // Datasheet indication for multi read -- autoincrement
+        // Write address of register to be read 
         error = I2C_MasterWriteByte(register_address);
         if (error == I2C_MSTR_NO_ERROR)
         {
@@ -50,18 +48,9 @@ ErrorCode I2C_CommunicationReadRegister(uint8_t device_address,
             error = I2C_MasterSendRestart(device_address, I2C_READ_XFER_MODE);
             if (error == I2C_MSTR_NO_ERROR)
             {
-                // Continue reading until we have register to read
-                uint8_t counter = register_count;
-                while(counter > 1)
-                {
-                    // Sending an ACK to continue the trasmission
-                    data[register_count - counter] = I2C_MasterReadByte(I2C_ACK_DATA);
-                    // Decreasing the counter 
-                    counter--;
-                }
-                
-                // Sending a NACK to end the transmission
-                data[register_count-1] = I2C_MasterReadByte(I2C_NAK_DATA);
+                /* Read data and sending the NACK signal in order to report the ending of the
+                data trasmission */
+                *data = I2C_MasterReadByte(I2C_NAK_DATA);
             }
         }
     }
@@ -113,16 +102,15 @@ uint8_t I2C_Communication_IsDeviceConnected(uint8_t device_address)
     }
 }
 
-void I2C_CommunicationInitRegister()
+void I2C_CommunicationSetRegisters()
 {
     /********  Reading the WHO AM I REGISTER  ******/
     ErrorCode error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
-                                                    LIS3DH_WHO_AM_I_REG_ADDRESS,
-                                                    1, 
+                                                    LIS3DH_WHO_AM_I_REG_ADDRESS, 
                                                     &who_am_i_register);
     if (error == NO_ERROR)
     {
-        sprintf(message, "WHO AM I REGISTER address: 0x%02X\r\n", who_am_i_register);
+        sprintf(message, "WHO AM I REGISTER (expected: 0x33): 0x%02X\r\n", who_am_i_register);
         UART_Debug_PutString(message);
     }
     else
@@ -133,11 +121,10 @@ void I2C_CommunicationInitRegister()
     /******  Reading the STATUS REGISTER  ******/
     error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
                                           LIS3DH_STATUS_REG_ADDRESS,
-                                          1, 
                                           &status_register);
     if (error == NO_ERROR)
     {
-        sprintf(message, "STATUS REGISTER address: 0x%02X\r\n", status_register);
+        sprintf(message, "STATUS REGISTER: 0x%02X\r\n", status_register);
         UART_Debug_PutString(message);
     }
     else
@@ -147,12 +134,11 @@ void I2C_CommunicationInitRegister()
     
     /******  Reading the CONTROL REGISTER 1  ******/
     error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
-                                          LIS3DH_CTRL_REG1_ADDRESS,
-                                          1, 
+                                          LIS3DH_CTRL_REG1_ADDRESS, 
                                           &ctrl_register_1);
     if (error == NO_ERROR)
     {
-        sprintf(message, "CONTROL REGISTER 1 address: 0x%02X\r\n", ctrl_register_1);
+        sprintf(message, "CONTROL REGISTER 1: 0x%02X\r\n", ctrl_register_1);
         UART_Debug_PutString(message);
     }
     else
@@ -162,33 +148,29 @@ void I2C_CommunicationInitRegister()
     
     /******  Reading the CONTROL REGISTER 4  ******/
     error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
-                                          LIS3DH_CTRL_REG4_ADDRESS,
-                                          1, 
+                                          LIS3DH_CTRL_REG4_ADDRESS, 
                                           &ctrl_register_4);
     if (error == NO_ERROR)
     {
-        sprintf(message, "CONTROL REGISTER 4 address: 0x%02X\r\n", ctrl_register_4);
+        sprintf(message, "CONTROL REGISTER 4: 0x%02X\r\n", ctrl_register_4);
         UART_Debug_PutString(message);
     }
     else
     {
         UART_Debug_PutString("Error occurred during I2C communication the CONTROL REGISTER 4");
     }
-}
-
-void I2C_CommunicationSetRegister()
-{
+    
+    // Setting the registers according to the requirements and the contraints of the project
+    
     /******  Setting the configurations for the CONTROL REGISTER 1  ******/
-    if (ctrl_register_1 != LIS3DH_CTRL_REG1_SETTINGS)
-    {
-        ctrl_register_1 = LIS3DH_CTRL_REG1_SETTINGS;
-    }
-    ErrorCode error = I2C_CommunicationWriteRegister(LIS3DH_DEVICE_ADDRESS,
+    ctrl_register_1 |= LIS3DH_CTRL_REG1_SETTINGS; /* Modify only the bits relative to the enabling
+    of the three axes without modifying the ODR bits */
+    error = I2C_CommunicationWriteRegister(LIS3DH_DEVICE_ADDRESS,
                                            LIS3DH_CTRL_REG1_ADDRESS,
                                            ctrl_register_1);
     if (error == NO_ERROR)
     {
-        sprintf(message, "CONTROL REGISTER 1 is set equal to: 0x%02X\r\n", ctrl_register_1);
+        sprintf(message, "CONTROL REGISTER 1 is setted equal to: 0x%02X\r\n", ctrl_register_1);
         UART_Debug_PutString(message);
     }
     else
@@ -206,30 +188,37 @@ void I2C_CommunicationSetRegister()
                                            ctrl_register_4);
     if (error == NO_ERROR)
     {
-        sprintf(message, "CONTROL REGISTER 4 is set equal to: 0x%02X\r\n", ctrl_register_4);
+        sprintf(message, "CONTROL REGISTER 4 is setted equal to (expected: 0x08): 0x%02X\r\n", ctrl_register_4);
         UART_Debug_PutString(message);
     }
     else
     {
         UART_Debug_PutString("Error occurred during I2C communication with CONTROL REGISTER 4");
     }
-}
+ }
 
 void I2C_CommunicationAvailableData()
 {
-    if (status_register == LIS3DH_STATUS_REG_AVAILABLEDATA)
+    if (status_register & LIS3DH_STATUS_REG_AVAILABLEDATA)
+    // ZYXDA bit = 1 and at least one among ZDA, YDA and XDA bits are equal to 1
     {
+        /*Definition of the variable error in order to store the outputs of the functions
+        related to the I2C communication protocol */
         ErrorCode error;
-        switch (status_register << 5) /* Considering only the 3 least significat bits associated
-        to the presence of available data for each signle channel of the accelerometer */
+        
+        // Channel X
+        if (status_register & LIS3DH_STATUS_REG_AVAILABLE_X) 
+        // XDA bit = 1
         {
-            case LIS3DH_STATUS_REG_AVAILABLEX:
+            // Reading of the least significant bits of the value
+            error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
+                                                  LIS3DH_OUT_X_L,
+                                                  &X_data[0]);
+            if (error == NO_ERROR)
             {
-                // Read the data register in order to save the available data
                 error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
-                                                                LIS3DH_OUT_X_L,
-                                                                2,
-                                                                X_data);
+                                                      LIS3DH_OUT_X_H,
+                                                      &X_data[1]);
                 if (error == NO_ERROR)
                 {
                     // Conversion of the data
@@ -240,13 +229,25 @@ void I2C_CommunicationAvailableData()
                     UART_Debug_PutString("Error occurred during I2C communication to read the channel X");
                 }
             }
-            case LIS3DH_STATUS_REG_AVAILABLEY:
+            else
             {
-                // Read the data register in order to save the available data
+                UART_Debug_PutString("Error occurred during I2C communication to read the channel X");
+            }
+        }
+        
+        // Channel Y
+        if (status_register & LIS3DH_STATUS_REG_AVAILABLE_Y)
+        // YDA bit = 1
+        {
+            // Reading of the least significant bits of the value
+            error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
+                                                  LIS3DH_OUT_Y_L,
+                                                  &Y_data[0]);
+            if (error == NO_ERROR)
+            {
                 error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
-                                                                LIS3DH_OUT_Y_L,
-                                                                2,
-                                                                Y_data);
+                                                      LIS3DH_OUT_Y_H,
+                                                      &Y_data[1]);
                 if (error == NO_ERROR)
                 {
                     // Conversion of the data
@@ -257,13 +258,25 @@ void I2C_CommunicationAvailableData()
                     UART_Debug_PutString("Error occurred during I2C communication to read the channel Y");
                 }
             }
-            case LIS3DH_STATUS_REG_AVAILABLEZ:
+            else
             {
-                // Read the data register in order to save the available data
+                UART_Debug_PutString("Error occurred during I2C communication to read the channel Y");
+            }
+        }
+        
+        // Channel Z
+        if (status_register & LIS3DH_STATUS_REG_AVAILABLE_Z) 
+        // ZDA bit = 1
+        {
+            // Reading of the least significant bits of the value
+            error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
+                                                  LIS3DH_OUT_Z_L,
+                                                  &Z_data[0]);
+            if (error == NO_ERROR)
+            {
                 error = I2C_CommunicationReadRegister(LIS3DH_DEVICE_ADDRESS,
-                                                                LIS3DH_OUT_Z_L,
-                                                                2,
-                                                                Z_data);
+                                                      LIS3DH_OUT_Z_H,
+                                                      &Z_data[1]);
                 if (error == NO_ERROR)
                 {
                     // Conversion of the data
@@ -274,6 +287,10 @@ void I2C_CommunicationAvailableData()
                     UART_Debug_PutString("Error occurred during I2C communication to read the channel Z");
                 }
             }
+            else
+            {
+                UART_Debug_PutString("Error occurred during I2C communication to read the channel Z");
+            }
         }
         
         // Transmission of the data through the I2C communication protocol
@@ -283,36 +300,41 @@ void I2C_CommunicationAvailableData()
 
 int16 I2C_CommunicationConversion(uint8_t *data)
 {
-    // Output value expressed in digit
-    int16 output_data = (int16)((data[0] | data[1] << 8) >> 4);
+    // Output value expressed in digit stored a single variable
+    int16 output_data = (int16)(data[0] | data[1] << 8) >> 4; /* The values coming from
+    the data registers are left aligned, so they are shifted by 4 in order to place the least
+    significant bit in correspondence of the first bit in the 16 bits variable */
     
-    // Conversion from digit to g
-    output_data = M_COEFFICIENT_DIGIT_TO_G * output_data + Q_COEFFICIENT_DIGIT_TO_G;
+    /* Considering that the sensibility of the device is 10^-3 in the high resolution mode and
+    with a full scale range that is between -2g and +2g, and also considering that the digits
+    are symmetrically distributed around the origin of the axes in the function that converts
+    from [digits] to [g] so the intercept is equal to zero, the coefficients nullify themselves 
+    because it is necessary to multiply the value obtained after the conversion for 10^3 in order
+    to "store" 3 decimals to be sent through the UART communication protocol in order to plot 
+    correctly the values sampled from the accelerometer --> the only conversion that remains to be 
+    done is the one that associates the data expressed in [g] to values of accelerations expressed
+    in [m/s^2] */
     
     // Conversion from g to accelerations expressed in [m/s^2]
-    output_data = M_COEFFICIENT_G_TO_ACC * output_data + Q_COEFFICIENT_G_TO_ACC;
-    
-    /* Conversion from a float number to an unsigned integer in order to transfer
-    correctly the data through the I2C communication protocol */
-    output_data = output_data * 1000;
+    float converted_data = M_COEFFICIENT_G_TO_ACC * output_data + Q_COEFFICIENT_G_TO_ACC;
     
     // Return the converted value
-    return output_data;
+    return converted_data;
 }
 
 void I2C_CommunicationTransmission()
 {
     // Channel X
     Output_Array[1] = (uint8_t)(Output_X & 0xFF); // Least significant bits
-    Output_Array[2] = (uint8_t)(Output_X >> 8); // Most significant bits
+    Output_Array[2] = (uint8_t)((Output_X >> 8) & 0xFF); // Most significant bits
     
     // Channel Y
     Output_Array[3] = (uint8_t)(Output_Y & 0xFF); // Least significant bits
-    Output_Array[4] = (uint8_t)(Output_Y >> 8); // Most significant bits
+    Output_Array[4] = (uint8_t)((Output_Y >> 8) & 0xFF); // Most significant bits
     
     // Channel Z
     Output_Array[5] = (uint8_t)(Output_Z & 0xFF); // Least significant bits
-    Output_Array[6] = (uint8_t)(Output_Z >> 8); // Most significant bits
+    Output_Array[6] = (uint8_t)((Output_Z >> 8) & 0xFF); // Most significant bits
     
     // Transmission
     UART_Debug_PutArray(Output_Array, BYTES_TO_SEND);
